@@ -18,11 +18,11 @@ public:
   Account(){}
    Account(string fname,string lname,float balance);
    long getAccNo(){return accountNumber;}
- string getFirstName(){return firstName;}
-  string getLastName(){return lastName;}
- float getBalance(){return balance;}
- void Deposit(float amount);
- void Withdraw(float amount);
+   string getFirstName(){return firstName;}
+   string getLastName(){return lastName;}
+   float getBalance(){return balance;}
+   void Deposit(float amount);
+   void Withdraw(float amount);
    static void setLastAccountNumber(long accountNumber);
   static long getLastAccountNumber();
  friend ofstream & operator<<(ofstream &ofs,Account &acc);
