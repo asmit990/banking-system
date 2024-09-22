@@ -1,4 +1,3 @@
-
 #include<iostream>
 #include<fstream>
 #include<cstdlib>
@@ -82,81 +81,106 @@ class Bank {
 
 public:
     Bank() {
-        ifstream infile;
-        infile.open("Bank.data");
+        ifstream infile("Bank.data");
         if (!infile) {
-            return;
+            return; // If file doesn't exist, just return
         }
         Account account;
-        while (!infile.eof()) {
-            infile >> account;
-            accounts.insert(pair<long, Account>(account.getAccNo(), account));
+        while (infile >> account) {  // Properly read till EOF
+            accounts.insert(make_pair(account.getAccNo(), account));
         }
-        Account::setLastAccountNumber(account.getAccNo());
         infile.close();
+        if (!accounts.empty()) {
+            Account::setLastAccountNumber(accounts.rbegin()->second.getAccNo() + 1); // Update the next account number
+        }
     }
 
     Account OpenAccount(string fname, string lname, float balance) {
         Account account(fname, lname, balance);
-        accounts.insert(pair<long, Account>(account.getAccNo(), account));
-        ofstream outfile;
-        outfile.open("Bank.data", ios::trunc);
-        map<long, Account>::iterator itr;
-        for (itr = accounts.begin(); itr != accounts.end(); itr++) {
-            outfile << itr->second;
-        }
-        outfile.close();
+        accounts.insert(make_pair(account.getAccNo(), account));
+        SaveAccountsToFile();
         return account;
     }
 
     Account BalanceEnquiry(long accountNumber) {
-        map<long, Account>::iterator itr = accounts.find(accountNumber);
-        return itr->second;
+        auto itr = accounts.find(accountNumber);
+        if (itr != accounts.end()) {
+            return itr->second;
+        } else {
+            throw runtime_error("Account not found.");
+        }
     }
 
     Account Deposit(long accountNumber, float amount) {
-        map<long, Account>::iterator itr = accounts.find(accountNumber);
-        itr->second.Deposit(amount);
-        ofstream outfile;
-        outfile.open("Bank.data", ios::trunc);
-        map<long, Account>::iterator itr2;
-        for (itr2 = accounts.begin(); itr2 != accounts.end(); itr2++) {
-            outfile << itr2->second;
+        auto itr = accounts.find(accountNumber);
+        if (itr != accounts.end()) {
+            itr->second.Deposit(amount);
+            SaveAccountsToFile();
+            return itr->second;
+        } else {
+            throw runtime_error("Account not found.");
         }
-        outfile.close();
-        return itr->second;
     }
 
     Account Withdraw(long accountNumber, float amount) {
-        map<long, Account>::iterator itr = accounts.find(accountNumber);
-        itr->second.Withdraw(amount);
-        ofstream outfile;
-        outfile.open("Bank.data", ios::trunc);
-        map<long, Account>::iterator itr2;
-        for (itr2 = accounts.begin(); itr2 != accounts.end(); itr2++) {
-            outfile << itr2->second;
+        auto itr = accounts.find(accountNumber);
+        if (itr != accounts.end()) {
+            itr->second.Withdraw(amount);
+            SaveAccountsToFile();
+            return itr->second;
+        } else {
+            throw runtime_error("Account not found.");
         }
-        outfile.close();
-        return itr->second;
     }
 
     void CloseAccount(long accountNumber) {
-        map<long, Account>::iterator itr = accounts.find(accountNumber);
-        cout << "Account Deleted" << itr->second;
-        accounts.erase(accountNumber);
-        ofstream outfile;
-        outfile.open("Bank.data", ios::trunc);
-        map<long, Account>::iterator itr2;
-        for (itr2 = accounts.begin(); itr2 != accounts.end(); itr2++) {
-            outfile << itr2->second;
+        auto itr = accounts.find(accountNumber);
+        if (itr != accounts.end()) {
+            cout << "Account Deleted: " << itr->second << endl;
+            accounts.erase(accountNumber);
+            SaveAccountsToFile();
+        } else {
+            throw runtime_error("Account not found.");
         }
-        outfile.close();
     }
 
     void ShowAllAccounts() {
-        map<long, Account>::iterator itr;
-        for (itr = accounts.begin(); itr != accounts.end(); itr++) {
-            cout << "Account " << itr->first << endl <<
+        for (const auto& pair : accounts) {
+            cout << "Account " << pair.first << endl << pair.second << endl;
+        }
+    }
+
+private:
+    void SaveAccountsToFile() {
+        ofstream outfile("Bank.data", ios::trunc);
+        for (const auto& pair : accounts) {
+            outfile << pair.second;
+        }
+        outfile.close();
+    }
+};
+
+int main() {
+    Bank b;
+    Account acc1 = b.OpenAccount("John", "Doe", 1000);
+    cout << acc1;
+    
+    b.Deposit(acc1.getAccNo(), 500);
+    cout << "After deposit: " << b.BalanceEnquiry(acc1.getAccNo()) << endl;
+
+    try {
+        b.Withdraw(acc1.getAccNo(), 1200);
+        cout << "After withdrawal: " << b.BalanceEnquiry(acc1.getAccNo()) << endl;
+    } catch (InsufficientFunds &e) {
+        cout << "Insufficient funds for withdrawal!" << endl;
+    }
+    
+    b.ShowAllAccounts();
+    
+    b.CloseAccount(acc1.getAccNo());
+
+    return 0;
+}
 
 
 
